@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -35,10 +31,11 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                 return NotFound();
             }
             WeekSchedule = weekschedule;
-            ViewData["GroupId"] = new SelectList(_context.Groups, "Id", "Id");
-            ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "Id");
-            ViewData["ScheduleId"] = new SelectList(_context.Schedules, "Id", "Id");
-            ViewData["SlotId"] = new SelectList(_context.Slots, "Id", "Id");
+            
+            // Retrieve necessary data for dropdowns
+            ViewData["RoomId"] = new SelectList(_context.Rooms, "Id", "RoomCode");
+            ViewData["SlotId"] = new SelectList(_context.Slots, "Id", "Id"); // Assuming SlotId is mapped to StartTime
+
             return Page();
         }
 
@@ -48,20 +45,10 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
         {
             if (!ModelState.IsValid)
             {
-                foreach (var key in ModelState.Keys)
-                {
-                    var state = ModelState[key];                                                                                                                                                    
-                    if (state.Errors.Any())
-                    {
-                        foreach (var error in state.Errors)
-                        {
-                            // Log or print error message for debugging
-                            Console.WriteLine($"Error in {key}: {error.ErrorMessage}");
-                        }
-                    }
-                }
+                // If ModelState is not valid, return the page with validation errors
                 return Page();
             }
+
             _context.Attach(WeekSchedule).State = EntityState.Modified;
 
             try
@@ -80,7 +67,7 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                 }
             }
 
-            return RedirectToPage("./Index");
+            return RedirectToPage("/Home/ViewSchedule");
         }
 
         private bool WeekScheduleExists(int id)

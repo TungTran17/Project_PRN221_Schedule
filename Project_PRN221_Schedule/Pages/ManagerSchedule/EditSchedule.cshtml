@@ -5,51 +5,87 @@
     ViewData["Title"] = "EditSchedule";
 }
 
-<h1>EditSchedule</h1>
+<style>
+    form {
+        margin: 0 auto;
+        max-width: 400px;
+    }
 
-<h4>WeekSchedule</h4>
-<hr />
+    input[type="submit"],
+    a {
+        display: inline-block;
+        padding: 8px 20px;
+        text-decoration: none;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+
+        input[type="submit"]:hover,
+        a:hover {
+            background-color: #0056b3;
+        }
+
+    a {
+        margin-left: 10px;
+    }
+
+    /* Style for read-only fields */
+    input[readonly],
+    select[readonly] {
+        background-color: #f0f0f0; /* Gray background color */
+        color: #555; /* Dark gray text color */
+        border: 1px solid #ccc; /* Light gray border */
+    }
+
+</style>
+
 <div class="row">
     <div class="col-md-4">
         <form method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="WeekSchedule.Id" />
             <div class="form-group">
-                <label asp-for="WeekSchedule.ScheduleId" class="control-label"></label>
-                <select asp-for="WeekSchedule.ScheduleId" class="form-control" asp-items="ViewBag.ScheduleId"></select>
-                <span asp-validation-for="WeekSchedule.ScheduleId" class="text-danger"></span>
+                <label asp-for="WeekSchedule.ScheduleId" class="control-label">Schedule ID: </label>
+                <input asp-for="WeekSchedule.ScheduleId" class="form-control" readonly />
             </div>
+            <br />
             <div class="form-group">
-                <label asp-for="WeekSchedule.WeekIndex" class="control-label"></label>
+                <label asp-for="WeekSchedule.WeekIndex" class="control-label">Day of Week: </label>
+                <!-- Assuming WeekIndex is mapped to DayOfWeek -->
                 <input asp-for="WeekSchedule.WeekIndex" class="form-control" />
                 <span asp-validation-for="WeekSchedule.WeekIndex" class="text-danger"></span>
             </div>
+            <br />
             <div class="form-group">
-                <label asp-for="WeekSchedule.RoomId" class="control-label"></label>
+                <label asp-for="WeekSchedule.RoomId" class="control-label">Room Code: </label>
                 <select asp-for="WeekSchedule.RoomId" class="form-control" asp-items="ViewBag.RoomId"></select>
                 <span asp-validation-for="WeekSchedule.RoomId" class="text-danger"></span>
             </div>
+            <br />
             <div class="form-group">
-                <label asp-for="WeekSchedule.GroupId" class="control-label"></label>
-                <select asp-for="WeekSchedule.GroupId" class="form-control" asp-items="ViewBag.GroupId"></select>
-                <span asp-validation-for="WeekSchedule.GroupId" class="text-danger"></span>
+                <label asp-for="WeekSchedule.GroupId" class="control-label">Group ID: </label>
+                <input asp-for="WeekSchedule.GroupId" class="form-control" readonly />
             </div>
+            <br />
             <div class="form-group">
-                <label asp-for="WeekSchedule.SlotId" class="control-label"></label>
+                <label asp-for="WeekSchedule.SlotId" class="control-label">Slot: </label>
                 <select asp-for="WeekSchedule.SlotId" class="form-control" asp-items="ViewBag.SlotId"></select>
                 <span asp-validation-for="WeekSchedule.SlotId" class="text-danger"></span>
             </div>
+            <br />
             <div class="form-group">
                 <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-page="./ManagerSchedule">Back to List</a>
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-page="./Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

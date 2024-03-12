@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
+﻿
 namespace Project_PRN221_Schedule.Models
 {
     public partial class WeekSchedule
@@ -13,9 +11,9 @@ namespace Project_PRN221_Schedule.Models
         public int SlotId { get; set; }
         public string? TimeSlotCode { get; set; }
 
-        public virtual Group Group { get; set; } = null!;
-        public virtual Room Room { get; set; } = null!;
-        public virtual Schedule Schedule { get; set; } = null!;
-        public virtual Slot Slot { get; set; } = null!;
+        public virtual Group? Group { get; set; } = null!;
+        public virtual Room? Room { get; set; } = null!;
+        public virtual Schedule? Schedule { get; set; } = null!;
+        public virtual Slot? Slot { get; set; } = null!;
     }
 }
