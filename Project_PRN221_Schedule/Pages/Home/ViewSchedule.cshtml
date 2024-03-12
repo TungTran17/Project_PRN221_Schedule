@@ -1,0 +1,129 @@
+﻿@page
+@model Project_PRN221_Schedule.Pages.Home.ViewScheduleModel
+@using System.Globalization
+@using System.Threading
+
+@{
+    ViewData["Title"] = "ViewSchedule";
+}
+
+<style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .table th {
+            background-color: #f2f2f2;
+        }
+
+        .table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .table tr:hover {
+            background-color: #ddd;
+        }
+
+    .bold {
+        font-weight: bold;
+    }
+</style>
+
+<div>
+    <label for="year">Select Year:</label>
+    <select id="year" name="year">
+        @for (int i = 2020; i <= 2025; i++)
+        {
+            <option value="@i">@i</option>
+        }
+    </select>
+</div>
+<br />
+<div>
+    <label for="week">Select Week:</label>
+    <select id="week" name="week">
+        @{
+            // Lấy danh sách các tuần cho năm đã chọn
+            var selectedYear = DateTime.Now.Year;
+            if (!string.IsNullOrEmpty(Request.Query["year"]))
+            {
+                selectedYear = Convert.ToInt32(Request.Query["year"]);
+            }
+
+            var ci = CultureInfo.CurrentCulture;
+            var cal = ci.Calendar;
+            int weeks = cal.GetWeekOfYear(new DateTime(selectedYear, 12, 31), CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+
+            // Hiển thị tuần theo ngày
+            for (int i = 1; i <= weeks; i++)
+            {
+                var jan1 = new DateTime(selectedYear, 1, 1);
+                var startOfWeek = jan1.AddDays((i - 1) * 7);
+                var endOfWeek = startOfWeek.AddDays(6);
+                <option value="@i">Week @(i) (@startOfWeek.ToShortDateString() - @endOfWeek.ToShortDateString())</option>
+            }
+        }
+    </select>
+</div>
+<br />
+<table class="table">
+    <thead>
+        <tr>
+            <th>Slot</th>
+            <th>Monday</th>
+            <th>Tuesday</th>
+            <th>Wednesday</th>
+            <th>Thursday</th>
+            <th>Friday</th>
+            <th>Saturday</th>
+            <th>Sunday</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var slot in Model.Slots)
+        {
+            <tr>
+                <td>@slot.Id</td>
+                @foreach (var dayOfWeek in new[] { 2, 3, 4, 5, 6, 7, 8 })
+                {
+                    <td>
+                        @foreach (var schedule in Model.WeekSchedule)
+                        {
+                            if (schedule.Slot.Id == slot.Id && schedule.WeekIndex == dayOfWeek)
+                            {
+                                <div>
+                                    <span class="bold">Room:</span> @schedule.Room.RoomCode<br />
+                                    <span class="bold">Class:</span> @schedule.Group.Class.ClassName<br />
+                                    <span class="bold">Subject:</span> @schedule.Group.Course.CourseCode<br />
+                                    <span class="bold">Teacher:</span> @schedule.Group.Teacher.TeacherName<br />
+                                    <span class="bold">TimeSlot:</span> @schedule.Slot.StartTime - @schedule.Slot.EndTime
+                                </div>
+                            }
+                        }
+                    </td>
+                }
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    document.getElementById("week").addEventListener("change", function () {
+        var selectedWeek = this.value;
+        var selectedYear = document.getElementById("year").value;
+        window.location.href = "/Home/ViewSchedule?week=" + selectedWeek + "&year=" + selectedYear;
+    });
+
+    document.getElementById("year").addEventListener("change", function () {
+        var selectedWeek = document.getElementById("week").value;
+        var selectedYear = this.value;
+        window.location.href = "/Home/ViewSchedule?week=" + selectedWeek + "&year=" + selectedYear;
+    });
+</script>

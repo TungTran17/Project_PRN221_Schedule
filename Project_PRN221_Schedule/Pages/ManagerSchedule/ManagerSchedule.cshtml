@@ -1,0 +1,150 @@
+﻿@page
+@model ManagerScheduleModel
+
+@{
+    ViewData["Title"] = "ManagerSchedule";
+}
+
+
+<style>
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+
+        .table th, .table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .table th {
+            background-color: #f2f2f2;
+        }
+
+        .table tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .table a {
+            text-decoration: none;
+            color: #007bff;
+            margin-right: 10px;
+        }
+
+    .btn-container {
+        display: inline-block;
+    }
+
+        .btn-container a {
+            display: inline-block;
+            padding: 8px 16px;
+            text-decoration: none;
+            color: #ffffff;
+            border-radius: 4px;
+        }
+
+            .btn-container a.edit {
+                background-color: #007bff; /* Màu xanh cho Edit */
+            }
+
+            .btn-container a.delete {
+                background-color: #dc3545; /* Màu đỏ cho Delete */
+            }
+
+</style>
+
+<form method="post" enctype="multipart/form-data" asp-page-handler="ImportCSV">
+    <div class="form-group">
+        <label for="csvFile">Choose CSV File:</label>
+        <input type="file" class="form-control-file" id="csvFile" name="csvFile" accept=".csv">
+    </div>
+    <button type="submit" class="btn btn-primary">Import</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                RoomCode
+            </th>
+            <th>
+                ClassName
+            </th>
+            <th>
+                CourseCode
+            </th>
+            <th>
+                TeacherName
+            </th>
+            <th>
+                Slot
+            </th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model.WeekSchedule)
+        {
+            <tr>
+                <td>
+                    @if (item.Room != null)
+                    {
+                        @Html.DisplayFor(modelItem => item.Room.RoomCode)
+                    }
+                    else
+                    {
+                        <text>N/A</text>
+                    }
+                </td>
+                <td>
+                    @if (item.Group != null && item.Group.Class != null)
+                    {
+                        @Html.DisplayFor(modelItem => item.Group.Class.ClassName)
+                    }
+                    else
+                    {
+                        <text>N/A</text>
+                    }
+                </td>
+                <td>
+                    @if (item.Group != null && item.Group.Course != null)
+                    {
+                        @Html.DisplayFor(modelItem => item.Group.Course.CourseCode)
+                    }
+                    else
+                    {
+                        <text>N/A</text>
+                    }
+                </td>
+                <td>
+                    @if (item.Group != null && item.Group.Teacher != null)
+                    {
+                        @Html.DisplayFor(modelItem => item.Group.Teacher.TeacherName)
+                    }
+                    else
+                    {
+                        <text>N/A</text>
+                    }
+                </td>
+                <td>
+                    @if (item.Slot != null)
+                    {
+                        <text>@item.Slot.StartTime - @item.Slot.EndTime</text>
+                    }
+                    else
+                    {
+                        <text>N/A</text>
+                    }
+                </td>
+
+                <td class="btn-container">
+                    <a class="edit" asp-page="./Edit" asp-route-id="@item.Id">Edit</a>
+                    <a class="delete" asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
