@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -19,39 +16,43 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
         }
 
         [BindProperty]
-        public WeekSchedule WeekSchedule { get; set; } = default!;
+        public WeekSchedule WeekSchedule { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
-            if (id == null || _context.WeekSchedules == null)
+            if (id == null)
             {
                 return NotFound();
             }
 
-            var weekschedule = await _context.WeekSchedules.FirstOrDefaultAsync(m => m.Id == id);
+            WeekSchedule = await _context.WeekSchedules
+                .Include(ws => ws.Group).ThenInclude(g => g.Class)
+                .Include(ws => ws.Group).ThenInclude(g => g.Course)
+                .Include(ws => ws.Group).ThenInclude(g => g.Teacher)
+                .Include(ws => ws.Room)
+                .Include(ws => ws.Schedule)
+                .Include(ws => ws.Slot)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
-            if (weekschedule == null)
+            if (WeekSchedule == null)
             {
                 return NotFound();
             }
-            else
-            {
-                WeekSchedule = weekschedule;
-            }
+
             return Page();
         }
 
         public async Task<IActionResult> OnPostAsync(int? id)
         {
-            if (id == null || _context.WeekSchedules == null)
+            if (id == null)
             {
                 return NotFound();
             }
-            var weekschedule = await _context.WeekSchedules.FindAsync(id);
 
-            if (weekschedule != null)
+            WeekSchedule = await _context.WeekSchedules.FindAsync(id);
+
+            if (WeekSchedule != null)
             {
-                WeekSchedule = weekschedule;
                 _context.WeekSchedules.Remove(WeekSchedule);
                 await _context.SaveChangesAsync();
             }

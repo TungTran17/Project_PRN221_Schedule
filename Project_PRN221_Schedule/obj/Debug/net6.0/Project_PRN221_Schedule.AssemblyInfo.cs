@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Project_PRN221_Schedule")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+28337006fde08e1b6ce2155739cd3d5c06f8b983")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+70c1388dea83abe57b19da3a50869de027ca863d")]
 [assembly: System.Reflection.AssemblyProductAttribute("Project_PRN221_Schedule")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Project_PRN221_Schedule")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
