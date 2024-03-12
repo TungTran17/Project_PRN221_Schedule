@@ -9,7 +9,6 @@ namespace Project_PRN221_Schedule.Models
         public int RoomId { get; set; }
         public int GroupId { get; set; }
         public int SlotId { get; set; }
-        public string? TimeSlotCode { get; set; }
 
         public virtual Group? Group { get; set; } = null!;
         public virtual Room? Room { get; set; } = null!;

@@ -53,8 +53,6 @@ namespace Project_PRN221_Schedule.Models
                     .IsUnique();
 
                 entity.Property(e => e.CourseCode).HasMaxLength(255);
-
-                entity.Property(e => e.CourseName).HasMaxLength(255);
             });
 
             modelBuilder.Entity<Group>(entity =>
@@ -117,8 +115,6 @@ namespace Project_PRN221_Schedule.Models
             modelBuilder.Entity<WeekSchedule>(entity =>
             {
                 entity.ToTable("WeekSchedule");
-
-                entity.Property(e => e.TimeSlotCode).HasMaxLength(50);
 
                 entity.HasOne(d => d.Group)
                     .WithMany(p => p.WeekSchedules)

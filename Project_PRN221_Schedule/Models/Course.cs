@@ -12,7 +12,6 @@ namespace Project_PRN221_Schedule.Models
 
         public int Id { get; set; }
         public string CourseCode { get; set; } = null!;
-        public string? CourseName { get; set; }
 
         public virtual ICollection<Group> Groups { get; set; }
     }

@@ -39,35 +39,50 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
 
         public async Task<IActionResult> OnPostImportCSVAsync(IFormFile csvFile)
         {
+            // Kiểm tra xem tệp CSV có được chọn hay không
             if (csvFile == null || csvFile.Length == 0)
             {
-                return RedirectToPage(); // Redirect back to the page if no file is uploaded
+                // Nếu không có tệp CSV được chọn, chuyển hướng người dùng trở lại trang hiện tại
+                return RedirectToPage();
             }
 
+            // Khởi tạo một HashSet để theo dõi các bộ kết hợp tuần-khe đã được import từ tệp CSV
+            var importedWeekSlotCombos = new HashSet<string>();
+
+            // Khởi tạo một Dictionary để lưu trữ thông tin về các tuần-khe đã tồn tại
+            var existingWeekSchedules = new Dictionary<string, HashSet<int>>();
+
+            // Đọc dữ liệu từ tệp CSV và xử lý từng bản ghi
             using (var reader = new StreamReader(csvFile.OpenReadStream()))
             using (var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
-                HeaderValidated = null, // Turn off header validation
-                MissingFieldFound = null // Ignore missing fields
+                HeaderValidated = null, // Vô hiệu hóa kiểm tra tiêu đề CSV
+                MissingFieldFound = null // Vô hiệu hóa thông báo khi trường bị thiếu trong CSV
             }))
             {
                 var records = csv.GetRecords<CsvRecord>();
                 foreach (var record in records)
                 {
+                    // Xử lý từng bản ghi từ tệp CSV
+
+                    // Lấy thông tin về khe thời gian từ trường TimeSlot của bản ghi
                     string timeSlot = record.TimeSlot;
 
+                    // Kiểm tra xem trường TimeSlot có hợp lệ không
                     if (string.IsNullOrEmpty(timeSlot) || timeSlot.Length < 3)
                     {
+                        // Nếu không hợp lệ, bỏ qua bản ghi và tiếp tục với bản ghi tiếp theo
                         continue;
                     }
 
+                    // Lấy loại khe thời gian (A hoặc P) và chỉ mục của khe thời gian
                     char slotType = timeSlot[0];
                     int slotIndex1 = int.Parse(timeSlot[1].ToString());
                     int slotIndex2 = int.Parse(timeSlot[2].ToString());
 
-                    // Determine SlotIds corresponding to the slot type and indices
                     int slotId1, slotId2;
 
+                    // Xác định ID của khe thời gian dựa trên loại khe thời gian
                     switch (slotType)
                     {
                         case 'A':
@@ -79,107 +94,109 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                             slotId2 = 4;
                             break;
                         default:
-                            throw new ArgumentException("Invalid slot type.");
+                            throw new ArgumentException("Loại slot không hợp lệ."); // Ném ngoại lệ nếu loại khe thời gian không hợp lệ
                     }
 
+                    // Xác định ngày trong tuần cho mỗi khe thời gian
                     int dayOfWeek1 = slotIndex1;
                     int dayOfWeek2 = slotIndex2;
 
-                    // Check if RoomCode exists in the database
+                    // Tạo chuỗi kết hợp của tuần và khe thời gian
+                    string weekSlotCombo1 = $"{dayOfWeek1}_{slotId1}";
+                    string weekSlotCombo2 = $"{dayOfWeek2}_{slotId2}";
+
+                    // Kiểm tra xem bộ kết hợp tuần-khe đã được import chưa, nếu có thì bỏ qua
+                    if (importedWeekSlotCombos.Contains(weekSlotCombo1) || importedWeekSlotCombos.Contains(weekSlotCombo2))
+                    {
+                        continue;
+                    }
+
+                    // Thêm bộ kết hợp tuần-khe đã import vào HashSet để tránh trùng lặp
+                    importedWeekSlotCombos.Add(weekSlotCombo1);
+                    importedWeekSlotCombos.Add(weekSlotCombo2);
+
+                    // Kiểm tra xem tuần-khe đã tồn tại trong cơ sở dữ liệu hay không, nếu có thì bỏ qua
+                    if (await IsWeekScheduleExistingAsync(record.RoomCode, dayOfWeek1, dayOfWeek2))
+                    {
+                        continue;
+                    }
+
+                    // Lấy hoặc tạo ID cho phòng, lớp, khóa học và lịch trình từ dữ liệu CSV
                     int roomId = await GetOrCreateRoomIdAsync(record.RoomCode);
-
-                    // Kiểm tra xem ClassName đã tồn tại trong cơ sở dữ liệu chưa
                     int classId = await GetOrCreateClassIdAsync(record.ClassName);
-
-                    // Check if CourseCode exists in the database
                     int courseId = await GetOrCreateCourseIdAsync(record.CourseCode);
-
-                    // Check if Schedule exists in the database
                     int scheduleId = await GetOrCreateScheduleIdAsync(record.impDate);
 
-                    // Check if the SlotIds exist in the database
+                    // Kiểm tra xem các khe thời gian đã tồn tại trong cơ sở dữ liệu hay không
                     var existingSlot1 = await _context.Slots.FirstOrDefaultAsync(s => s.Id == slotId1);
                     var existingSlot2 = await _context.Slots.FirstOrDefaultAsync(s => s.Id == slotId2);
 
+                    // Nếu một trong số các khe thời gian không tồn tại trong cơ sở dữ liệu, trả về lỗi BadRequest
                     if (existingSlot1 == null || existingSlot2 == null)
                     {
-                        // If the slot doesn't exist, return an error or handle it appropriately
-                        return BadRequest("Slot ID does not exist in the database.");
+                        return BadRequest("ID slot không tồn tại trong cơ sở dữ liệu.");
                     }
 
-                    // Check if a schedule with the same properties exists but with different WeekIndex
-                    var existingWeekSchedule1 = await _context.WeekSchedules.FirstOrDefaultAsync(ws =>
-                        ws.Room.RoomCode == record.RoomCode &&
-                        ws.WeekIndex != dayOfWeek1 &&
-                        ws.SlotId == slotId1 &&
-                        ws.ScheduleId == scheduleId);
-
-                    if (existingWeekSchedule1 != null)
+                    // Kiểm tra xem tuần-khe đã tồn tại trong cơ sở dữ liệu sau khi kiểm tra lại
+                    if (await IsWeekScheduleExistingAsync(record.RoomCode, dayOfWeek1, dayOfWeek2))
                     {
-                        // Update WeekIndex if week schedule exists with different WeekIndex
-                        existingWeekSchedule1.WeekIndex = dayOfWeek1;
-                        _context.WeekSchedules.Update(existingWeekSchedule1);
+                        continue;
                     }
-                    else
+
+                    // Nếu tuần-khe chưa tồn tại trong cơ sở dữ liệu, thêm nó vào Dictionary để theo dõi
+                    if (!existingWeekSchedules.ContainsKey(record.RoomCode))
                     {
-                        // Create a new WeekSchedule record
-                        var newWeekSchedule1 = new WeekSchedule
+                        existingWeekSchedules[record.RoomCode] = new HashSet<int>();
+                    }
+                    existingWeekSchedules[record.RoomCode].Add(dayOfWeek1);
+                    existingWeekSchedules[record.RoomCode].Add(dayOfWeek2);
+
+                    // Tạo các bản ghi mới cho tuần-khe và thêm chúng vào cơ sở dữ liệu
+                    var newWeekSchedule1 = new WeekSchedule
+                    {
+                        RoomId = roomId,
+                        Group = new Group
                         {
-                            RoomId = roomId,
-                            Group = new Group
-                            {
-                                ClassId = classId,
-                                CourseId = courseId,
-                                Teacher = new Teacher { TeacherName = record.TeacherName }
-                            },
-                            SlotId = slotId1,
-                            WeekIndex = dayOfWeek1,
-                            ScheduleId = scheduleId
-                        };
+                            ClassId = classId,
+                            CourseId = courseId,
+                            Teacher = new Teacher { TeacherName = record.TeacherName }
+                        },
+                        SlotId = slotId1,
+                        WeekIndex = dayOfWeek1,
+                        ScheduleId = scheduleId
+                    };
 
-                        // Add new WeekSchedule to the database
-                        _context.WeekSchedules.Add(newWeekSchedule1);
-                    }
+                    _context.WeekSchedules.Add(newWeekSchedule1);
 
-                    var existingWeekSchedule2 = await _context.WeekSchedules.FirstOrDefaultAsync(ws =>
-                        ws.Room.RoomCode == record.RoomCode &&
-                        ws.WeekIndex != dayOfWeek2 &&
-                        ws.SlotId == slotId2 &&
-                        ws.ScheduleId == scheduleId);
-
-                    if (existingWeekSchedule2 != null)
+                    var newWeekSchedule2 = new WeekSchedule
                     {
-                        // Update WeekIndex if week schedule exists with different WeekIndex
-                        existingWeekSchedule2.WeekIndex = dayOfWeek2;
-                        _context.WeekSchedules.Update(existingWeekSchedule2);
-                    }
-                    else
-                    {
-                        // Create a new WeekSchedule record
-                        var newWeekSchedule2 = new WeekSchedule
+                        RoomId = roomId,
+                        Group = new Group
                         {
-                            RoomId = roomId,
-                            Group = new Group
-                            {
-                                ClassId = classId,
-                                CourseId = courseId,
-                                Teacher = new Teacher { TeacherName = record.TeacherName }
-                            },
-                            SlotId = slotId2,
-                            WeekIndex = dayOfWeek2,
-                            ScheduleId = scheduleId
-                        };
+                            ClassId = classId,
+                            CourseId = courseId,
+                            Teacher = new Teacher { TeacherName = record.TeacherName }
+                        },
+                        SlotId = slotId2,
+                        WeekIndex = dayOfWeek2,
+                        ScheduleId = scheduleId
+                    };
 
-                        // Add new WeekSchedule to the database
-                        _context.WeekSchedules.Add(newWeekSchedule2);
-                    }
+                    _context.WeekSchedules.Add(newWeekSchedule2);
                 }
 
-                // Save changes to the database
+                // Lưu các thay đổi vào cơ sở dữ liệu sau khi hoàn thành xử lý tệp CSV
                 await _context.SaveChangesAsync();
             }
 
-            return RedirectToPage(); // Redirect back to the page after import
+            // Chuyển hướng người dùng trở lại trang hiện tại sau khi import dữ liệu từ tệp CSV thành công
+            return RedirectToPage();
+        }
+
+        private async Task<bool> IsWeekScheduleExistingAsync(string roomCode, int dayOfWeek1, int dayOfWeek2)
+        {
+            return await _context.WeekSchedules
+                .AnyAsync(ws => ws.Room.RoomCode == roomCode && (ws.WeekIndex == dayOfWeek1 || ws.WeekIndex == dayOfWeek2));
         }
 
         private async Task<int> GetOrCreateRoomIdAsync(string roomCode)
