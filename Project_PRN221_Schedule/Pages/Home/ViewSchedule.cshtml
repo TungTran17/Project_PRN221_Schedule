@@ -39,7 +39,7 @@
 <div>
     <label for="year">Select Year:</label>
     <select id="year" name="year">
-        @for (int i = 2020; i <= 2025; i++)
+        @for (int i = 2023; i <= 2024; i++)
         {
             <option value="@i">@i</option>
         }
@@ -49,8 +49,8 @@
 <div>
     <label for="week">Select Week:</label>
     <select id="week" name="week">
+        <!-- Sử dụng mã Razor để tạo danh sách các tuần dựa trên năm đã chọn -->
         @{
-            // Lấy danh sách các tuần cho năm đã chọn
             var selectedYear = DateTime.Now.Year;
             if (!string.IsNullOrEmpty(Request.Query["year"]))
             {
@@ -61,7 +61,6 @@
             var cal = ci.Calendar;
             int weeks = cal.GetWeekOfYear(new DateTime(selectedYear, 12, 31), CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
-            // Hiển thị tuần theo ngày
             for (int i = 1; i <= weeks; i++)
             {
                 var jan1 = new DateTime(selectedYear, 1, 1);
@@ -103,7 +102,7 @@
                                     <span class="bold">Class:</span> @schedule.Group.Class.ClassName<br />
                                     <span class="bold">Subject:</span> @schedule.Group.Course.CourseCode<br />
                                     <span class="bold">Teacher:</span> @schedule.Group.Teacher.TeacherName<br />
-                                    <span class="bold">TimeSlot:</span> @schedule.Slot.StartTime - @schedule.Slot.EndTime
+                                    <span class="bold">TimeSlot:</span> @schedule.Slot.StartTime - @schedule.Slot.EndTime<br />
                                 </div>
                             }
                         }
@@ -115,15 +114,59 @@
 </table>
 
 <script>
+    // Lưu giá trị của năm và tuần khi chúng thay đổi
+    document.getElementById("year").addEventListener("change", function () {
+        var selectedYear = this.value;
+        var selectedWeek = document.getElementById("week").value;
+        sessionStorage.setItem("selectedYear", selectedYear);
+        sessionStorage.setItem("selectedWeek", selectedWeek);
+
+        // Cập nhật danh sách tuần dựa trên năm mới đã chọn
+        var weeksSelect = document.getElementById("week");
+        weeksSelect.innerHTML = ''; // Xóa danh sách tuần hiện có
+
+        // Tính toán số tuần trong năm
+        var weeksInYear = getISOWeeksInYear(selectedYear);
+
+        for (var i = 1; i <= weeksInYear; i++) {
+            var jan1 = new Date(selectedYear, 0, 1);
+            var startOfWeek = new Date(jan1.getTime() + (i - 1) * 7 * 24 * 60 * 60 * 1000);
+            var endOfWeek = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000);
+            var weekOption = document.createElement("option");
+            weekOption.text = "Week " + i + " (" + startOfWeek.toLocaleDateString() + " - " + endOfWeek.toLocaleDateString() + ")";
+            weekOption.value = i;
+            weeksSelect.add(weekOption);
+        }
+    });
+
+    // Hàm tính số tuần trong năm ISO
+    function getISOWeeksInYear(year) {
+        var d = new Date(year, 11, 31);
+        var day = d.getDay();
+        return day === 6 || (day === 5 && (d.getDate() === 31 || d.getDate() === 30)) ? 53 : 52;
+    }
+
+    // Khôi phục giá trị của năm và tuần khi trang được tải lại
+    document.addEventListener("DOMContentLoaded", function () {
+        var selectedYear = sessionStorage.getItem("selectedYear");
+        var selectedWeek = sessionStorage.getItem("selectedWeek");
+
+        if (selectedYear !== null) {
+            document.getElementById("year").value = selectedYear;
+        }
+
+        if (selectedWeek !== null) {
+            document.getElementById("week").value = selectedWeek;
+        }
+    });
+
+    // Lưu giá trị của tuần khi nó thay đổi
     document.getElementById("week").addEventListener("change", function () {
         var selectedWeek = this.value;
         var selectedYear = document.getElementById("year").value;
-        window.location.href = "/Home/ViewSchedule?week=" + selectedWeek + "&year=" + selectedYear;
-    });
-
-    document.getElementById("year").addEventListener("change", function () {
-        var selectedWeek = document.getElementById("week").value;
-        var selectedYear = this.value;
-        window.location.href = "/Home/ViewSchedule?week=" + selectedWeek + "&year=" + selectedYear;
+        sessionStorage.setItem("selectedYear", selectedYear);
+        sessionStorage.setItem("selectedWeek", selectedWeek);
     });
 </script>
+
+

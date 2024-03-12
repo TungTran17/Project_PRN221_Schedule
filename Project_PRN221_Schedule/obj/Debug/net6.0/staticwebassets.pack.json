@@ -1,6 +1,10 @@
 {
   "Files": [
     {
+      "Id": "D:\\Spring 24\\PRN221\\Project_PRN221_Schedule\\Project_PRN221_Schedule\\wwwroot\\css\\style.css",
+      "PackagePath": "staticwebassets\\css\\style.css"
+    },
+    {
       "Id": "D:\\Spring 24\\PRN221\\Project_PRN221_Schedule\\Project_PRN221_Schedule\\wwwroot\\favicon.ico",
       "PackagePath": "staticwebassets\\favicon.ico"
     },

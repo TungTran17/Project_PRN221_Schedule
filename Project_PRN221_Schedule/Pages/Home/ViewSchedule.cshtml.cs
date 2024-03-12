@@ -19,9 +19,6 @@ namespace Project_PRN221_Schedule.Pages.Home
             _context = context;
         }
 
-        public string StartTimeFormatted { get; set; }
-        public string EndTimeFormatted { get; set; }
-
         public IList<Slot> Slots { get; set; }
         public IList<WeekSchedule> WeekSchedule { get; set; }
 

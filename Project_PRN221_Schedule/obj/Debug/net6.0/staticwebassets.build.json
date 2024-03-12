@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "zfN5nGKHALN/F9STaia1J9j26haX/HVNNlIcE2iqP9s=",
+  "Hash": "FEfkPWMRkZR+W4iDDGK2TIPiPX3tVunlJaxG5F5LMBM=",
   "Source": "Project_PRN221_Schedule",
   "BasePath": "_content/Project_PRN221_Schedule",
   "Mode": "Default",
@@ -16,6 +16,25 @@
     }
   ],
   "Assets": [
+    {
+      "Identity": "D:\\Spring 24\\PRN221\\Project_PRN221_Schedule\\Project_PRN221_Schedule\\wwwroot\\css\\style.css",
+      "SourceId": "Project_PRN221_Schedule",
+      "SourceType": "Discovered",
+      "ContentRoot": "D:\\Spring 24\\PRN221\\Project_PRN221_Schedule\\Project_PRN221_Schedule\\wwwroot\\",
+      "BasePath": "_content/Project_PRN221_Schedule",
+      "RelativePath": "css/style.css",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\css\\style.css"
+    },
     {
       "Identity": "D:\\Spring 24\\PRN221\\Project_PRN221_Schedule\\Project_PRN221_Schedule\\wwwroot\\favicon.ico",
       "SourceId": "Project_PRN221_Schedule",
