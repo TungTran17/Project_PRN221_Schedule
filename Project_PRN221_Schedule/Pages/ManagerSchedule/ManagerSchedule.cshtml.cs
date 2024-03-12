@@ -58,8 +58,6 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
 
                     if (string.IsNullOrEmpty(timeSlot) || timeSlot.Length < 3)
                     {
-                        // Handle invalid TimeSlot string
-                        // For example, log the error or skip this record
                         continue;
                     }
 

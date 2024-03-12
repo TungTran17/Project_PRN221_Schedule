@@ -294,3 +294,4 @@ D:\Spring 24\PRN221\Project_PRN221_Schedule\Project_PRN221_Schedule\obj\Debug\ne
 D:\Spring 24\PRN221\Project_PRN221_Schedule\Project_PRN221_Schedule\obj\Debug\net6.0\Project_PRN221_Schedule.genruntimeconfig.cache
 D:\Spring 24\PRN221\Project_PRN221_Schedule\Project_PRN221_Schedule\obj\Debug\net6.0\ref\Project_PRN221_Schedule.dll
 D:\Spring 24\PRN221\Project_PRN221_Schedule\Project_PRN221_Schedule\bin\Debug\net6.0\CsvHelper.dll
+D:\Spring 24\PRN221\Project_PRN221_Schedule\Project_PRN221_Schedule\obj\Debug\net6.0\Project_PRN221_Schedule.sourcelink.json

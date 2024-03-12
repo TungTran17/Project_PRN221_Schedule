@@ -15,7 +15,6 @@ namespace Project_PRN221_Schedule
             builder.Services.AddDbContext<Project_PRN221_ScheduleContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
