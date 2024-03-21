@@ -36,41 +36,48 @@
     }
 </style>
 
-<div>
-    <label for="year">Select Year:</label>
-    <select id="year" name="year">
-        @for (int i = 2023; i <= 2024; i++)
-        {
-            <option value="@i">@i</option>
-        }
-    </select>
-</div>
-<br />
-<div>
-    <label for="week">Select Week:</label>
-    <select id="week" name="week">
-        <!-- Sử dụng mã Razor để tạo danh sách các tuần dựa trên năm đã chọn -->
-        @{
-            var selectedYear = DateTime.Now.Year;
-            if (!string.IsNullOrEmpty(Request.Query["year"]))
-            {
-                selectedYear = Convert.ToInt32(Request.Query["year"]);
+<form method="post" id="weekForm">
+    <div>
+        <label for="year">Select Year:</label>
+        <select id="year" name="year">
+            @{
+                var currentYear = DateTime.Now.Year;
+                var startYear = new DateTime(2023, 3, 3).Year; // Start year of the school
+                for (int i = startYear; i <= currentYear; i++)
+                {
+                    <option selected="@(currentYear ==  Model.SelectedDate.Year ? "selected" : null)" value="@i">@i</option>
+                }
             }
+        </select>
+    </div>
+    <br />
+    <div>
 
-            var ci = CultureInfo.CurrentCulture;
-            var cal = ci.Calendar;
-            int weeks = cal.GetWeekOfYear(new DateTime(selectedYear, 12, 31), CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+        <label for="week">Select Week:</label>
+        <select id="week" name="week">
+            @{
+                // Loop to generate options for weeks
+                var selectedYear = Model.SelectedDate.Year;
+                if (!string.IsNullOrEmpty(Request.Query["year"]))
+                {
+                    selectedYear = Convert.ToInt32(Request.Query["year"]);
+                }
 
-            for (int i = 1; i <= weeks; i++)
-            {
-                var jan1 = new DateTime(selectedYear, 1, 1);
-                var startOfWeek = jan1.AddDays((i - 1) * 7);
-                var endOfWeek = startOfWeek.AddDays(6);
-                <option value="@i">Week @(i) (@startOfWeek.ToShortDateString() - @endOfWeek.ToShortDateString())</option>
+                var ci = CultureInfo.CurrentCulture;
+                var cal = ci.Calendar;
+                int weeks = cal.GetWeekOfYear(new DateTime(selectedYear, 12, 31), CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+
+                for (int i = 1; i <= weeks; i++)
+                {
+                    var jan1 = new DateTime(selectedYear, 1, 1);
+                    var startOfWeek = jan1.AddDays((i - 1) * 7).Date;
+                    var endOfWeek = startOfWeek.AddDays(6);
+                    <option selected="@(startOfWeek == Model.SelectedDate ? "selected" : null)" value="@i">Week @(i) (@startOfWeek.ToShortDateString() - @endOfWeek.ToShortDateString())</option>
+                }
             }
-        }
-    </select>
-</div>
+        </select>
+    </div>
+</form>
 <br />
 <table class="table">
     <thead>
@@ -90,21 +97,18 @@
         {
             <tr>
                 <td>@slot.Id</td>
-                @foreach (var dayOfWeek in new[] { 2, 3, 4, 5, 6, 7, 8 })
+                @for (int dayOfWeek = 2; dayOfWeek <= 8; dayOfWeek++)
                 {
                     <td>
-                        @foreach (var schedule in Model.WeekSchedule)
+                        @foreach (var schedule in Model.WeekSchedule.Where(w => w.Slot.Id == slot.Id && w.WeekIndex == dayOfWeek))
                         {
-                            if (schedule.Slot.Id == slot.Id && schedule.WeekIndex == dayOfWeek)
-                            {
-                                <div>
-                                    <span class="bold">Room:</span> @schedule.Room.RoomCode<br />
-                                    <span class="bold">Class:</span> @schedule.Group.Class.ClassName<br />
-                                    <span class="bold">Subject:</span> @schedule.Group.Course.CourseCode<br />
-                                    <span class="bold">Teacher:</span> @schedule.Group.Teacher.TeacherName<br />
-                                    <span class="bold">TimeSlot:</span> @schedule.Slot.StartTime - @schedule.Slot.EndTime<br />
-                                </div>
-                            }
+                            <div>
+                                <span class="bold">Room:</span> @schedule.Room.RoomCode<br />
+                                <span class="bold">Class:</span> @schedule.Group.Class.ClassName<br />
+                                <span class="bold">Subject:</span> @schedule.Group.Course.CourseCode<br />
+                                <span class="bold">Teacher:</span> @schedule.Group.Teacher.TeacherName<br />
+                                <span class="bold">TimeSlot:</span> @schedule.Slot.StartTime - @schedule.Slot.EndTime<br />
+                            </div>
                         }
                     </td>
                 }
@@ -114,6 +118,11 @@
 </table>
 
 <script>
+
+    document.getElementById('week').addEventListener('change', function () {
+        document.getElementById('weekForm').submit();
+    });
+
     // Lưu giá trị của năm và tuần khi chúng thay đổi
     document.getElementById("year").addEventListener("change", function () {
         var selectedYear = this.value;
@@ -127,7 +136,6 @@
 
         // Tính toán số tuần trong năm
         var weeksInYear = getISOWeeksInYear(selectedYear);
-
         for (var i = 1; i <= weeksInYear; i++) {
             var jan1 = new Date(selectedYear, 0, 1);
             var startOfWeek = new Date(jan1.getTime() + (i - 1) * 7 * 24 * 60 * 60 * 1000);
@@ -167,6 +175,5 @@
         sessionStorage.setItem("selectedYear", selectedYear);
         sessionStorage.setItem("selectedWeek", selectedWeek);
     });
+
 </script>
-
-
