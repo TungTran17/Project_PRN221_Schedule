@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,8 +10,10 @@ using CsvHelper.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Build.Framework;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Project_PRN221_Schedule.DAO;
 using Project_PRN221_Schedule.Models;
 
@@ -19,10 +22,13 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
     public class ManagerScheduleModel : PageModel
     {
         private readonly Project_PRN221_ScheduleContext _context;
+        public DateTime SelectedDate { get; set; }
 
         public ManagerScheduleModel(Project_PRN221_ScheduleContext context)
         {
             _context = context;
+            SelectedDate = DateTime.Today;
+            Slots = _context.Slots.ToList();
         }
 
         public IList<WeekSchedule> WeekSchedule { get; set; }
@@ -30,15 +36,57 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
 
         public async Task OnGetAsync()
         {
-            Slots = await _context.Slots.ToListAsync();
+            WeekSchedule = FilterSchedule(SelectedDate);
+        }
 
-            WeekSchedule = await _context.WeekSchedules
-                .Include(ws => ws.Room)
-                .Include(ws => ws.Group).ThenInclude(g => g.Class)
-                .Include(ws => ws.Group).ThenInclude(g => g.Course)
-                .Include(ws => ws.Group).ThenInclude(g => g.Teacher)
-                .Include(ws => ws.Slot)
-                .ToListAsync();
+        public async Task<IActionResult> OnPostFilter(DateTime? selectedDate)
+        {
+            SelectedDate = selectedDate ?? DateTime.Today;
+            WeekSchedule = FilterSchedule(selectedDate ?? DateTime.Today);
+
+            return Page();
+        }
+
+        public List<WeekSchedule> FilterSchedule(DateTime selectedDate)
+        {
+            List<WeekSchedule> rs = new List<WeekSchedule>();
+            var monday = GetMonday(selectedDate);
+
+            Schedule? schedule = _context.Schedules.FirstOrDefault(s => monday <= s.ImplementDate && s.ImplementDate <= monday.AddDays(6));
+
+            if (schedule != null)
+            {
+                rs = _context.WeekSchedules
+                    .Include(ws => ws.Room)
+                    .Include(ws => ws.Group).ThenInclude(g => g.Class)
+                    .Include(ws => ws.Group).ThenInclude(g => g.Course)
+                    .Include(ws => ws.Group).ThenInclude(g => g.Teacher)
+                    .Include(ws => ws.Slot)
+                    .Where(ws => ws.ScheduleId == schedule.Id && ws.WeekIndex == ConvertDayOfWeekToWeekIndex(selectedDate.DayOfWeek))
+                    .ToList();
+            }
+            return rs;
+        }
+
+
+        private int ConvertDayOfWeekToWeekIndex(DayOfWeek dayOfWeek)
+        {
+            if (dayOfWeek == DayOfWeek.Sunday)
+            {
+                return 8;
+            }
+            else
+            {
+                return (int)dayOfWeek + 1;
+            }
+        }
+        private DateTime GetMonday(DateTime selectedDate)
+        {
+            if (selectedDate.DayOfWeek == DayOfWeek.Sunday)
+            {
+                return selectedDate.AddDays(-6);
+            }
+            return selectedDate.AddDays(-(int)selectedDate.DayOfWeek + 1);
         }
 
         public async Task<IActionResult> OnPostImportCSVAsync(IFormFile csvFile)

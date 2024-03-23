@@ -14,12 +14,15 @@ namespace Project_PRN221_Schedule.Pages.Home
     public class ViewScheduleModel : PageModel
     {
         private readonly Project_PRN221_ScheduleContext _context;
+        //public DateTime LaunchDate { get; set; }
         private readonly int TOTAL_DAY_OF_WEEK = 7;
 
         public ViewScheduleModel(Project_PRN221_ScheduleContext context)
         {
             _context = context;
             SelectedDate = GetMonday(DateTime.Today);
+            Slots = _context.Slots.ToList();
+            //LaunchDate = _context.Schedules.Select(s => s.ImplementDate).GroupBy(g=> g.Date).Select(g => g.Min()).FirstOrDefault();
         }
         public DateTime SelectedDate { get; set; }
 
@@ -28,9 +31,6 @@ namespace Project_PRN221_Schedule.Pages.Home
 
         public async Task OnGetAsync(int? week, int? year)
         {
-
-            await LoadSlotsAsync();
-
             // Ensure WeekSchedule is initialized
             if (WeekSchedule == null)
             {
@@ -60,17 +60,12 @@ namespace Project_PRN221_Schedule.Pages.Home
                 await LoadWeekScheduleAsync(SelectedDate);
             }
             // Redirect back to the GET handler to display the filtered data
-            return RedirectToPage("/Home/ViewSchedule", new { week, year });
+            return Page();
         }
 
         private DateTime GetMonday(int? week, int? year)
         {
-            return new DateTime(year ?? DateTime.Now.Year, 1, 1).AddDays(((week ?? 0) - 1) * TOTAL_DAY_OF_WEEK);
-        }
-
-        private async Task LoadSlotsAsync()
-        {
-            Slots = await _context.Slots.ToListAsync();
+            return GetMonday(new DateTime(year ?? DateTime.Now.Year, 1, 4)).AddDays(((week ?? 0) - 1) * TOTAL_DAY_OF_WEEK);
         }
 
         private async Task LoadWeekScheduleAsync(DateTime SelectedDate)
@@ -91,7 +86,12 @@ namespace Project_PRN221_Schedule.Pages.Home
 
         private DateTime GetMonday(DateTime selectedDate)
         {
+            if (selectedDate.DayOfWeek == DayOfWeek.Sunday)
+            {
+                return selectedDate.AddDays(-6);
+            }
             return selectedDate.AddDays(-(int)selectedDate.DayOfWeek + 1);
         }
+
     }
 }

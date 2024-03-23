@@ -42,7 +42,7 @@
         <select id="year" name="year">
             @{
                 var currentYear = DateTime.Now.Year;
-                var startYear = new DateTime(2023, 3, 3).Year;
+                var startYear = new DateTime(2022, 3, 3).Year;
                 for (int i = startYear; i <= currentYear; i++)
                 {
                     <option selected="@(currentYear ==  Model.SelectedDate.Year ? "selected" : null)" value="@i">@i</option>
@@ -69,7 +69,10 @@
                 for (int i = 1; i <= weeks; i++)
                 {
                     var jan1 = new DateTime(selectedYear, 1, 1);
-                    var startOfWeek = jan1.AddDays((i - 1) * 7).Date;
+                    var daysToMonday = (int)(DayOfWeek.Monday - jan1.DayOfWeek);
+                    if (daysToMonday < 0) // Nếu ngày 1/1 không phải là thứ Hai
+                        daysToMonday += 7; // Cần phải thêm vào 7 ngày để đạt được thứ Hai gần nhất
+                    var startOfWeek = jan1.AddDays(daysToMonday + (i - 1) * 7);
                     var endOfWeek = startOfWeek.AddDays(6);
                     <option selected="@(startOfWeek == Model.SelectedDate ? "selected" : null)" value="@i">Week @(i) (@startOfWeek.ToShortDateString() - @endOfWeek.ToShortDateString())</option>
                 }
@@ -136,8 +139,7 @@
         // Tính toán số tuần trong năm
         var weeksInYear = getISOWeeksInYear(selectedYear);
         for (var i = 1; i <= weeksInYear; i++) {
-            var jan1 = new Date(selectedYear, 0, 1);
-            var startOfWeek = new Date(jan1.getTime() + (i - 1) * 7 * 24 * 60 * 60 * 1000);
+            var startOfWeek = getWeekStartDate(selectedYear, i);
             var endOfWeek = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000);
             var weekOption = document.createElement("option");
             weekOption.text = "Week " + i + " (" + startOfWeek.toLocaleDateString() + " - " + endOfWeek.toLocaleDateString() + ")";
@@ -150,8 +152,35 @@
     function getISOWeeksInYear(year) {
         var d = new Date(year, 11, 31);
         var day = d.getDay();
-        return day === 6 || (day === 5 && (d.getDate() === 31 || d.getDate() === 30)) ? 53 : 52;
+        var weekCount = 0;
+
+        // Nếu ngày cuối năm là thứ Hai và năm nhuần, tuần cuối cùng sẽ là tuần thứ 53
+        if (day === 1 && (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0))) {
+            weekCount = 53;
+        } else {
+            weekCount = 52;
+        }
+
+        return weekCount;
     }
+
+
+    // Hàm lấy ngày bắt đầu của một tuần trong năms
+    function getWeekStartDate(year, weekNumber) {
+        var jan1 = new Date(year, 0, 1);
+        var dayOfWeek = jan1.getDay(); // Ngày trong tuần của ngày 1/1
+        var daysToAdd = 1 - dayOfWeek; // Số ngày cần thêm để đạt được thứ 2
+        if (dayOfWeek === 0) {
+            daysToAdd = 1; // Nếu ngày 1/1 là Chủ nhật, thêm 1 ngày để đạt được thứ 2
+        } else if (dayOfWeek > 1) {
+            daysToAdd += 7; // Nếu ngày 1/1 không phải là thứ 2, cần thêm số ngày đến thứ 2 tuần sau
+        }
+        var firstMonday = new Date(jan1.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+        var weekStartDate = new Date(firstMonday.getTime() + (weekNumber - 1) * 7 * 24 * 60 * 60 * 1000);
+        return weekStartDate;
+    }
+
+
 
     // Khôi phục giá trị của năm và tuần khi trang được tải lại
     document.addEventListener("DOMContentLoaded", function () {

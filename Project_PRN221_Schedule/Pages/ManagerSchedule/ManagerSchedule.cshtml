@@ -82,10 +82,10 @@
     <button type="submit" class="btn btn-primary">Import</button>
 </form>
 
-<form method="get" class="form-date">
+<form method="post" class="form-date" asp-page-handler="Filter">
     <div class="form-group mr-3">
         <label for="selectedDate" class="mr-2">Select Date:</label>
-        <input type="date" id="selectedDate" name="selectedDate">
+        @Html.TextBoxFor(m => m.SelectedDate, "{0:yyyy-MM-dd}", new { type = "date", id = "selectedDate" })
     </div>
     <button type="submit" class="btn btn-primary">Filter</button>
 </form>
@@ -114,6 +114,7 @@
                         {
                             if (schedules.Count == 1)
                             {
+                                <br />
                                 <div>
                                     <span class="bold">SubjectCode:</span> @(schedules[0].Group?.Course?.CourseCode ?? "N/A")<br />
                                     <span class="bold">TeacherName:</span> @(schedules[0].Group?.Teacher?.TeacherName ?? "N/A")<br />
@@ -123,11 +124,13 @@
                                     <a class="edit" asp-page="./EditSchedule" asp-route-id="@schedules[0].Id">Edit</a>
                                     <a class="delete" asp-page="./Delete" asp-route-id="@schedules[0].Id">Delete</a>
                                 </div>
+                                <br />
                             }
                             else
                             {
                                 @foreach (var schedule in schedules)
                                 {
+                                    <br />
                                     <div>
                                         <span class="bold">SubjectCode:</span> @(schedule.Group?.Course?.CourseCode ?? "N/A")<br />
                                         <span class="bold">TeacherName:</span> @(schedule.Group?.Teacher?.TeacherName ?? "N/A")<br />
@@ -137,6 +140,7 @@
                                         <a class="edit" asp-page="./EditSchedule" asp-route-id="@schedule.Id">Edit</a>
                                         <a class="delete" asp-page="./Delete" asp-route-id="@schedule.Id">Delete</a>
                                     </div>
+                                    <br />
                                 }
                             }
                         }
@@ -148,7 +152,6 @@
                 }
             </tr>
         }
-
     </tbody>
 </table>
 
