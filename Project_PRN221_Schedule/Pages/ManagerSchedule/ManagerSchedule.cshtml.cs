@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Project_PRN221_Schedule.DAO;
 using Project_PRN221_Schedule.Models;
 
@@ -25,9 +26,12 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
         }
 
         public IList<WeekSchedule> WeekSchedule { get; set; }
+        public List<Slot> Slots { get; set; }
 
         public async Task OnGetAsync()
         {
+            Slots = await _context.Slots.ToListAsync();
+
             WeekSchedule = await _context.WeekSchedules
                 .Include(ws => ws.Room)
                 .Include(ws => ws.Group).ThenInclude(g => g.Class)

@@ -53,6 +53,25 @@
                 background-color: #dc3545; /* Màu đỏ cho Delete */
             }
 
+    .form-date {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+        .form-date .form-group {
+            margin-right: 10px;
+        }
+
+        .form-date label {
+            margin-right: 5px;
+        }
+
+    .bold {
+        font-weight: bold;
+    }
+
 </style>
 
 <form method="post" enctype="multipart/form-data" asp-page-handler="ImportCSV">
@@ -63,88 +82,73 @@
     <button type="submit" class="btn btn-primary">Import</button>
 </form>
 
+<form method="get" class="form-date">
+    <div class="form-group mr-3">
+        <label for="selectedDate" class="mr-2">Select Date:</label>
+        <input type="date" id="selectedDate" name="selectedDate">
+    </div>
+    <button type="submit" class="btn btn-primary">Filter</button>
+</form>
+
 <table class="table">
     <thead>
+
         <tr>
-            <th>
-                RoomCode
-            </th>
-            <th>
-                ClassName
-            </th>
-            <th>
-                CourseCode
-            </th>
-            <th>
-                TeacherName
-            </th>
-            <th>
-                Slot
-            </th>
+            <th></th>
+            @foreach (var slot in Model.Slots)
+            {
+                <th>@slot.StartTime - @slot.EndTime</th>
+            }
         </tr>
     </thead>
-
     <tbody>
-        @foreach (var item in Model.WeekSchedule)
+        @foreach (var room in Model.WeekSchedule.Select(ws => ws.Room).Distinct())
         {
             <tr>
-                <td>
-                    @if (item.Room != null)
-                    {
-                        @Html.DisplayFor(modelItem => item.Room.RoomCode)
-                    }
-                    else
-                    {
-                        <text>N/A</text>
-                    }
-                </td>
-                <td>
-                    @if (item.Group != null && item.Group.Class != null)
-                    {
-                        @Html.DisplayFor(modelItem => item.Group.Class.ClassName)
-                    }
-                    else
-                    {
-                        <text>N/A</text>
-                    }
-                </td>
-                <td>
-                    @if (item.Group != null && item.Group.Course != null)
-                    {
-                        @Html.DisplayFor(modelItem => item.Group.Course.CourseCode)
-                    }
-                    else
-                    {
-                        <text>N/A</text>
-                    }
-                </td>
-                <td>
-                    @if (item.Group != null && item.Group.Teacher != null)
-                    {
-                        @Html.DisplayFor(modelItem => item.Group.Teacher.TeacherName)
-                    }
-                    else
-                    {
-                        <text>N/A</text>
-                    }
-                </td>
-                <td>
-                    @if (item.Slot != null)
-                    {
-                        <text>@item.Slot.StartTime - @item.Slot.EndTime</text>
-                    }
-                    else
-                    {
-                        <text>N/A</text>
-                    }
-                </td>
-
-                <td class="btn-container">
-                    <a class="edit" asp-page="./EditSchedule" asp-route-id="@item.Id">Edit</a>
-                    <a class="delete" asp-page="./Delete" asp-route-id="@item.Id">Delete</a>
-                </td>
-
+                <th>@room.RoomCode</th>
+                @foreach (var slot in Model.Slots)
+                {
+                    var schedules = Model.WeekSchedule.Where(ws => ws.Room == room && ws.Slot == slot).ToList();
+                    <td>
+                        @if (schedules.Count != 0)
+                        {
+                            if (schedules.Count == 1)
+                            {
+                                <div>
+                                    <span class="bold">SubjectCode:</span> @(schedules[0].Group?.Course?.CourseCode ?? "N/A")<br />
+                                    <span class="bold">TeacherName:</span> @(schedules[0].Group?.Teacher?.TeacherName ?? "N/A")<br />
+                                    <span class="bold">ClassName:</span> @(schedules[0].Group?.Class?.ClassName ?? "N/A")
+                                </div>
+                                <div class="btn-container">
+                                    <a class="edit" asp-page="./EditSchedule" asp-route-id="@schedules[0].Id">Edit</a>
+                                    <a class="delete" asp-page="./Delete" asp-route-id="@schedules[0].Id">Delete</a>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var schedule in schedules)
+                                {
+                                    <div>
+                                        <span class="bold">SubjectCode:</span> @(schedule.Group?.Course?.CourseCode ?? "N/A")<br />
+                                        <span class="bold">TeacherName:</span> @(schedule.Group?.Teacher?.TeacherName ?? "N/A")<br />
+                                        <span class="bold">ClassName:</span> @(schedule.Group?.Class?.ClassName ?? "N/A")
+                                    </div>
+                                    <div class="btn-container">
+                                        <a class="edit" asp-page="./EditSchedule" asp-route-id="@schedule.Id">Edit</a>
+                                        <a class="delete" asp-page="./Delete" asp-route-id="@schedule.Id">Delete</a>
+                                    </div>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <text>N/A</text>
+                        }
+                    </td>
+                }
             </tr>
         }
+
     </tbody>
 </table>
+

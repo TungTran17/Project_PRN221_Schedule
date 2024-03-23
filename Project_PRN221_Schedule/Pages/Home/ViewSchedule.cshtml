@@ -42,7 +42,7 @@
         <select id="year" name="year">
             @{
                 var currentYear = DateTime.Now.Year;
-                var startYear = new DateTime(2023, 3, 3).Year; // Start year of the school
+                var startYear = new DateTime(2023, 3, 3).Year;
                 for (int i = startYear; i <= currentYear; i++)
                 {
                     <option selected="@(currentYear ==  Model.SelectedDate.Year ? "selected" : null)" value="@i">@i</option>
@@ -56,7 +56,6 @@
         <label for="week">Select Week:</label>
         <select id="week" name="week">
             @{
-                // Loop to generate options for weeks
                 var selectedYear = Model.SelectedDate.Year;
                 if (!string.IsNullOrEmpty(Request.Query["year"]))
                 {
