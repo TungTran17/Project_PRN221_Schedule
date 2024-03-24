@@ -14,6 +14,7 @@ using Microsoft.Build.Framework;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using NuGet.DependencyResolver;
 using Project_PRN221_Schedule.DAO;
 using Project_PRN221_Schedule.Models;
 
@@ -168,7 +169,7 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                     importedWeekSlotCombos.Add(weekSlotCombo2);
 
                     // Kiểm tra xem tuần-khe đã tồn tại trong cơ sở dữ liệu hay không, nếu có thì bỏ qua
-                    if (await IsWeekScheduleExistingAsync(record.RoomCode, dayOfWeek1, dayOfWeek2))
+                    if (await IsWeekScheduleExistingAsync(record.ScheduleId, record.RoomCode, dayOfWeek1, dayOfWeek2, record.impDate, record.TimeSlot, record.ClassName, record.RoomCode, record.TeacherName, record.CourseCode))
                     {
                         continue;
                     }
@@ -182,6 +183,11 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                     // Kiểm tra xem các khe thời gian đã tồn tại trong cơ sở dữ liệu hay không
                     var existingSlot1 = await _context.Slots.FirstOrDefaultAsync(s => s.Id == slotId1);
                     var existingSlot2 = await _context.Slots.FirstOrDefaultAsync(s => s.Id == slotId2);
+                    var existingTeacher = await _context.Teachers.FirstOrDefaultAsync(t => t.TeacherName == record.TeacherName);
+                    var existingGroup = await _context.Groups.FirstOrDefaultAsync(g =>
+                                        g.Class.ClassName == record.ClassName &&
+                                        g.Course.CourseCode == record.CourseCode &&
+                                        g.Teacher.TeacherName == record.TeacherName);
 
                     // Nếu một trong số các khe thời gian không tồn tại trong cơ sở dữ liệu, trả về lỗi BadRequest
                     if (existingSlot1 == null || existingSlot2 == null)
@@ -190,10 +196,11 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                     }
 
                     // Kiểm tra xem tuần-khe đã tồn tại trong cơ sở dữ liệu sau khi kiểm tra lại
-                    if (await IsWeekScheduleExistingAsync(record.RoomCode, dayOfWeek1, dayOfWeek2))
+                    if (await IsWeekScheduleExistingAsync(record.ScheduleId, record.RoomCode, dayOfWeek1, dayOfWeek2, record.impDate, record.TimeSlot, record.ClassName, record.RoomCode, record.TeacherName, record.CourseCode))
                     {
                         continue;
                     }
+
 
                     // Nếu tuần-khe chưa tồn tại trong cơ sở dữ liệu, thêm nó vào Dictionary để theo dõi
                     if (!existingWeekSchedules.ContainsKey(record.RoomCode))
@@ -203,16 +210,31 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                     existingWeekSchedules[record.RoomCode].Add(dayOfWeek1);
                     existingWeekSchedules[record.RoomCode].Add(dayOfWeek2);
 
-                    // Tạo các bản ghi mới cho tuần-khe và thêm chúng vào cơ sở dữ liệu
-                    var newWeekSchedule1 = new WeekSchedule
+                    // Tạo mới Group nếu không tồn tại
+                    Group group;
+                    if (existingGroup != null)
                     {
-                        RoomId = roomId,
-                        Group = new Group
+                        // Sử dụng Group đã tồn tại
+                        group = existingGroup;
+                    }
+                    else
+                    {
+                        // Tạo mới Group
+                        group = new Group
                         {
                             ClassId = classId,
                             CourseId = courseId,
-                            Teacher = new Teacher { TeacherName = record.TeacherName }
-                        },
+                            Teacher = existingTeacher // Sử dụng giáo viên đã tạo hoặc đã có
+                        };
+                        _context.Groups.Add(group);
+                        await _context.SaveChangesAsync(); // Lưu Group mới vào cơ sở dữ liệu
+                    }
+
+                    // Sử dụng Group đã được tạo hoặc sử dụng từ cơ sở dữ liệu
+                    var newWeekSchedule1 = new WeekSchedule
+                    {
+                        RoomId = roomId,
+                        Group = group, // Sử dụng Group đã tạo hoặc đã có
                         SlotId = slotId1,
                         WeekIndex = dayOfWeek1,
                         ScheduleId = scheduleId
@@ -223,12 +245,7 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
                     var newWeekSchedule2 = new WeekSchedule
                     {
                         RoomId = roomId,
-                        Group = new Group
-                        {
-                            ClassId = classId,
-                            CourseId = courseId,
-                            Teacher = new Teacher { TeacherName = record.TeacherName }
-                        },
+                        Group = group, // Sử dụng Group đã tạo hoặc đã có
                         SlotId = slotId2,
                         WeekIndex = dayOfWeek2,
                         ScheduleId = scheduleId
@@ -245,10 +262,26 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
             return RedirectToPage();
         }
 
-        private async Task<bool> IsWeekScheduleExistingAsync(string roomCode, int dayOfWeek1, int dayOfWeek2)
+        private async Task<bool> IsWeekScheduleExistingAsync(int scheduleId, string roomCode, int dayOfWeek1, int dayOfWeek2, string impDate, string timeSlot, string className, string roomCodeCheck, string teacherName, string subjectName)
         {
+            // Chuyển đổi ImpDate từ chuỗi sang kiểu DateTime
+            DateTime impDateTime = DateTime.ParseExact(impDate, "M/d/yyyy", CultureInfo.InvariantCulture);
+
             return await _context.WeekSchedules
-                .AnyAsync(ws => ws.Room.RoomCode == roomCode && (ws.WeekIndex == dayOfWeek1 || ws.WeekIndex == dayOfWeek2));
+                .AnyAsync(ws =>
+                    (
+                            (ws.ScheduleId == scheduleId && (ws.WeekIndex == dayOfWeek1 || ws.WeekIndex == dayOfWeek2) && ws.Schedule.ImplementDate == impDateTime) && // Điều kiện chính
+                            (
+                                // Kiểm tra các điều kiện phụ nếu scheduleId và impDateTime giống nhau
+                                (ws.Room.RoomCode == roomCode && ws.Group.Class.ClassName == className && ws.Group.Teacher.TeacherName != teacherName && ws.Group.Course.CourseCode != subjectName) ||
+                                (ws.Room.RoomCode == roomCode && ws.Group.Class.ClassName == className && ws.Group.Teacher.TeacherName == teacherName && ws.Group.Course.CourseCode == subjectName) ||
+                                (ws.Room.RoomCode == roomCode && ws.Group.Teacher.TeacherName == teacherName && ws.Group.Class.ClassName == className && ws.Group.Course.CourseCode != subjectName) ||
+                                (ws.Room.RoomCode != roomCode && ws.Group.Class.ClassName == className && ws.Group.Teacher.TeacherName == teacherName) ||
+                                (ws.Room.RoomCode == roomCode && ws.Group.Class.ClassName == className && ws.Group.Teacher.TeacherName != teacherName)
+                            )
+
+                    )
+                );
         }
 
         private async Task<int> GetOrCreateRoomIdAsync(string roomCode)
@@ -292,38 +325,26 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
 
         private async Task<int> GetOrCreateScheduleIdAsync(string impDate)
         {
-            // Truyền ngày dưới dạng chuỗi
-            if (DateTime.TryParseExact(impDate, "M/d/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
+            // Chuyển đổi ImpDate từ chuỗi sang kiểu DateTime
+            DateTime impDateTime;
+            if (!DateTime.TryParseExact(impDate, "M/d/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out impDateTime))
             {
-                // Chuyển đổi ngày thành định dạng yyyy-MM-dd
-                string formattedDate = parsedDate.ToString("yyyy-MM-dd");
-
-                // Kiểm tra xem ngày đã chuyển đổi thành công hay không
-                if (parsedDate != default(DateTime))
-                {
-                    var existingSchedule = await _context.Schedules.FirstOrDefaultAsync(s => s.ImplementDate == parsedDate);
-                    if (existingSchedule != null)
-                    {
-                        return existingSchedule.Id;
-                    }
-                    else
-                    {
-                        // Nếu không tìm thấy, tạo bản ghi mới với ngày đã định dạng
-                        return await CreateNewSchedule(formattedDate);
-                    }
-                }
-                else
-                {
-                    // Ngày không được chuyển đổi thành công
-                    throw new ArgumentException("Invalid date format.");
-                }
-            }
-            else
-            {
-                // Xử lý định dạng ngày không hợp lệ
-                // Ví dụ: ghi log lỗi hoặc ném một ngoại lệ
                 throw new ArgumentException("Invalid date format.");
             }
+
+            // Kiểm tra xem ngày đã tồn tại trong cơ sở dữ liệu hay chưa, nếu có thì trả về ID
+            var existingSchedule = await _context.Schedules.FirstOrDefaultAsync(s => s.ImplementDate == impDateTime);
+            if (existingSchedule != null)
+            {
+                return existingSchedule.Id;
+            }
+
+            // Nếu không tồn tại, tạo mới một ngày và lưu vào cơ sở dữ liệu
+            var newSchedule = new Schedule { ImplementDate = impDateTime };
+            _context.Schedules.Add(newSchedule);
+            await _context.SaveChangesAsync();
+
+            return newSchedule.Id;
         }
 
 
@@ -350,24 +371,6 @@ namespace Project_PRN221_Schedule.Pages.ManagerSchedule
             _context.Classes.Add(newClass);
             await _context.SaveChangesAsync();
             return newClass.Id;
-        }
-
-        private async Task<int> CreateNewSchedule(String impDate)
-        {
-            // Parse the date string
-            if (DateTime.TryParseExact(impDate, "d/M/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime parsedDate))
-            {
-                var newSchedule = new Schedule { ImplementDate = parsedDate };
-                _context.Schedules.Add(newSchedule);
-                await _context.SaveChangesAsync();
-                return newSchedule.Id;
-            }
-            else
-            {
-                // Handle invalid date format
-                // For example, log the error or throw an exception
-                throw new ArgumentException("Invalid date format.");
-            }
         }
     }
 }
